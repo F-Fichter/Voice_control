@@ -6,6 +6,7 @@ logs/
 voices/
 blob/
 .history/
+config.json
 config.local.json
 *.swp
 .DS_Store
