@@ -1,6 +1,6 @@
 # Voice Control
 
-Application CLI de contrôle vocal : **Whisper** (local ou Groq API) pour la reconnaissance (STT), **Groq API** pour le chat (LLM), **gTTS** pour la synthèse vocale.
+Application CLI de contrôle vocal : **Groq API** (Whisper-large-v3) pour la reconnaissance (STT), **Groq API** pour le chat (LLM), **gTTS** pour la synthèse vocale. Fonctionne sur x86_64 et ARM64.
 
 ## Table des matières
 
@@ -18,12 +18,24 @@ Application CLI de contrôle vocal : **Whisper** (local ou Groq API) pour la rec
 
 ## 1. Installation
 
+### Dépendances système (x86_64 / ARM64)
+
+```bash
+sudo apt install -y python3 python3-pip python3-venv portaudio19-dev libasound2-dev \
+    ffmpeg mpv
+```
+
+### Python
+
 ```bash
 cd ~/OPENCODE/voice_control
 python3 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
-# Pour la reconnaissance vocale locale (optionnel mais recommandé) :
+pip install numpy sounddevice requests gtts yt-dlp ddgs beautifulsoup4 lxml Pillow
+```
+
+Pour la reconnaissance locale (optionnel) :
+```bash
 pip install openai-whisper torch --index-url https://download.pytorch.org/whl/cpu
 ```
 
@@ -33,6 +45,13 @@ pip install openai-whisper torch --index-url https://download.pytorch.org/whl/cp
 source venv/bin/activate
 ```
 
+### Architecture ARM64
+
+Le projet tourne sur ARM64 (Orange Pi, RK3528, Raspberry Pi). Scripts dédiés :
+- `setup_orangepi2w.sh` — Orange Pi 2W (Allwinner H618, 4GB RAM)
+- `setup_rk3528.sh` — RK3528
+- `Dockerfile.arm64` — Build Docker multi-arch
+
 ---
 
 ## 2. Configuration
@@ -41,7 +60,7 @@ source venv/bin/activate
 
 1. Va sur [console.groq.com](https://console.groq.com) → inscris-toi
 2. Génère une clé API (`gsk_...`)
-3. Ajoute-la dans `config.json` :
+3. Copie `config.json.example` → `config.json` → ajoute ta clé
 
 ```json
 {
@@ -49,9 +68,11 @@ source venv/bin/activate
 }
 ```
 
-Avec cette clé, le chat passe par le cloud :
-- **Reconnaissance vocale** → Whisper local (modèle `base`), fallback Groq Whisper-large-v3
-- **Chat** → Groq Llama 3.3 70B (ou autre modèle au choix)
+> **Note** : `config.json` est dans `.gitignore` pour ne pas exposer ta clé.
+
+Avec cette clé :
+- **Reconnaissance vocale** → Groq Whisper-large-v3 (cloud)
+- **Chat** → Groq (9 modèles disponibles au choix)
 - **Recherche internet** → DuckDuckGo (intégré au chat, sans clé API)
 - **Synthèse vocale** → gTTS (voix Google féminine)
 
@@ -59,7 +80,8 @@ Avec cette clé, le chat passe par le cloud :
 
 | Fichier | Description |
 |---------|-------------|
-| `config.json` | Configuration principale (clé Groq, audio, wake word) |
+| `config.json` | Configuration principale (clé Groq, audio, wake word) — **hors git** |
+| `config.json.example` | Exemple de configuration |
 | `devices.json` | Appareils connectés |
 
 ### Paramètres importants
@@ -68,9 +90,10 @@ Avec cette clé, le chat passe par le cloud :
 |-----------|-------------|-------------------|
 | `groq_api_key` | **Clé Groq** (STT + chat) | `""` |
 | `user_location` | Localisation utilisateur (commerces, météo, recherches) | `Surtainville 50270 France` |
-| `audio.input_device` | Périphérique d'entrée | `null` (auto) |
+| `audio.input_device` | Périphérique d'entrée (null = auto) | `null` |
+| `audio.input_devices` | **Plusieurs micros** (liste d'indices) | `[3, 4]` |
 | `audio.sample_rate` | Taux d'échantillonnage | `44100` |
-| `wake_word` | Mot de réveil | `BOB` |
+| `wake_word` | Mot de réveil | `bob` |
 | `whisper.model` | Modèle Whisper local | `base` |
 | `whisper.language` | Langue STT | `fr` |
 | `ollama_model` | Modèle de chat choisi | `llama-3.3-70b-versatile` |
@@ -87,23 +110,33 @@ python voice_control.py --input-device 3
 
 # Test audio avant de commencer
 python voice_control.py --input-device 3 --test-audio
+
+# Mode test texte (sans micro)
+python voice_control.py --mode test --test-text "météo Surtainville"
 ```
 
 Au démarrage, choisis ton modèle Groq :
 
 ```
+
 =======================================================
   Modèles Groq disponibles (chat cloud gratuit) :
     [1] Llama 3.3 70B - Ultra performant (recommandé)
     [2] Llama 3.1 8B - Très rapide
-    [3] Llama 3 70B - Grande capacité
-    [4] Mixtral 8x7B - Bon équilibre
+    [3] Llama 4 Scout 17B - Scout
+    [4] Qwen 3 32B - Qwen
+    [5] Compound  - Compound
+    [6] Compound Mini - Compound Mini
+    [7] GPT OSS 20B - GPT OSS 20B
+    [8] GPT OSS 120B - GPT OSS 120B
+    [9] Allam 2 7B - Allam
+    [c] Personnalisé
     [d] Défaut (llama-3.3-70b-versatile)
 =======================================================
 Choix >
 ```
 
-Puis dis **"BOB"** pour activer l'assistant.
+Puis dis **"bob"** pour activer l'assistant.
 
 ---
 
@@ -115,16 +148,30 @@ Puis dis **"BOB"** pour activer l'assistant.
 python voice_control.py --list-audio-devices
 ```
 
-Sortie :
+Sortie typique :
 ```
 Périphériques audio disponibles:
 Index  Nom                                        In   Out  HW
 ---------------------------------------------------------------------------
-  *    0 USB PnP Sound Device: Audio              1    0    hw:0,0
-       1 Intel HDMI/DP LPE Audio: -               8    8    hw:1,0
-       2 default                                   64   64   hw:2,0
-       3 pulse                                     32   32   hw:3,0
+  *    0 rockchip-hdmi0                           0    2    hw:0,0
+       1 USB PnP Sound Device: Audio              1    0    hw:1,0
+       2 USB PnP Sound Device: Audio              1    0    hw:2,0
+       3 sysdefault                                0    128
+       7 pulse                                     32   32
+      12 default                                   32   32
 ```
+
+### Double micro
+
+La config supporte **deux micros simultanément** via `input_devices` (liste) :
+```json
+"audio": {
+  "input_devices": [1, 2],
+  "sample_rate": 44100
+}
+```
+
+Le système enregistre sur les deux entrées et moyenne les signaux pour une meilleure couverture.
 
 ### Sample rate
 
@@ -183,7 +230,7 @@ Pendant la lecture YouTube, tu peux aussi dire directement **"stop"**, **"arrêt
 Un VU mètre s'affiche en temps réel :
 
 ```
-  [#####.....]  -12.3 dB  attente 'BOB'...
+  [#####.....]  -12.3 dB  attente 'bob'...
 ```
 
 Couleurs :
@@ -196,40 +243,64 @@ Couleurs :
 
 | Commande | Action |
 |----------|--------|
-| "BOB" + "allume" / "lumière" | Allume une lumière |
-| "BOB" + "éteins" / "teins" | Éteint une lumière |
-| "BOB" + "télé" / "tv" | Allume la télévision |
-| "BOB" + "joue [artiste]" | Lance la musique YouTube |
-| "BOB" + "stop" / "arrête" | Arrête musique/livre audio |
-| "BOB" + "parle" / "discut" | Mode conversation (Groq LLM) |
-| "BOB" + question quelconque | Réponse avec recherche internet si nécessaire |
-| "BOB" + "PC" / "ordi" | Commande PC distant |
-| "BOB" + "météo [ville]" | Météo du jour + 8 jours de prévisions (Open-Meteo gratuit) → ville inconnue = Surtainville. Marées du jour incluses |
-| "BOB" + "pronostic quinté" | Pronostic PMU via recherche web |
-| "BOB" + "résultat quinté" | Résultat PMU (arrivée) |
-| *(pendant musique)* "stop" / "arrête" | Arrête instantanément sans wake word (fenêtre 3s) |
+| "bob" + "allume" / "lumière" | Allume une lumière |
+| "bob" + "éteins" / "teins" | Éteint une lumière |
+| "bob" + "télé" / "tv" | Allume la télévision |
+| "bob" + "joue [artiste]" | Lance la musique YouTube |
+| "bob" + "stop" / "arrête" | Arrête musique/livre audio |
+| "bob" + "parle" / "discut" | Mode conversation (Groq LLM) |
+| "bob" + question quelconque | Réponse avec recherche internet si nécessaire |
+| "bob" + "PC" / "ordi" | Commande PC distant |
+| "bob" + "météo [ville]" | Météo + 8 jours de prévisions + **marées par jour** (7 jours, TideTurtle API) |
+| "bob" + "pronostic quinté" | Pronostic PMU via recherche web |
+| "bob" + "résultat quinté" | Résultat PMU (arrivée) |
+| "bob" + "annule" | Annule toute action en cours (TTS, musique) |
+| "bob" + "recommence" | Rejoue la dernière vidéo ou répète le dernier TTS |
+| *(pendant lecture)* **Escape** / **Ctrl+Space** | Annulation immédiate |
+| *(pendant lecture)* **"annule"** (sans bob) | Annulation vocale immédiate |
 
 ### Mode conversation
 
-1. Dis "BOB" → "parle" (ou une question directement)
+1. Dis "bob" → "parle" (ou une question directement)
 2. Le LLM répond via TTS
 3. Parle normalement pour continuer la conversation
 4. Dis "quit", "sortir" ou "au revoir" pour quitter
 5. Anti-écho : détection automatique des répétitions TTS
 
+### Annulation immédiate
+
+| Méthode | Portée | Comment ça marche |
+|---------|--------|-------------------|
+| **Escape** | Tout moment | Thread daemon lit stdin en mode cbreak + non-bloquant, détecte `\x1b`, tue TTS + média |
+| **Ctrl+Space** | Tout moment | Même mécanisme, détecte `\x00` |
+| **"bob annule"** | Todo | Déclenche l'action `cancel` |
+| **"annule"** (sans bob) | Pendant TTS | `_speak_with_cancel()` enregistre + reconnaît le micro toutes les ~0.9s |
+
+Après annulation, le système revient à l'écoute du wake word "bob". Un annuler précédent ne peut pas annuler la commande suivante.
+
 ### Météo
 
 La météo utilise **Open-Meteo** (API gratuite, sans clé). Le parsing de ville extrait le nom après "météo" :
-- "BOB, météo Paris" → météo de Paris
-- "BOB, quel temps à Cherbourg" → météo de Cherbourg
+- "bob, météo Paris" → météo de Paris
+- "bob, quel temps à Cherbourg" → météo de Cherbourg
 
 **Fallback Surtainville** : si la ville n'est pas reconnue par Open-Meteo (ex. "sur Tainville" mal transcrit par Whisper), le système retente automatiquement avec "Surtainville".
 
-**Prévisions 8 jours** : la réponse inclut les conditions actuelles + les prévisions des 8 prochains jours (min/max, précipitations, vent).
+**Prévisions 9 jours** : la réponse inclut les conditions actuelles + les prévisions des 9 prochains jours (min/max, précipitations, vent).
 
 ### Marées
 
-Les horaires de marées (pleine mer / basse mer) du jour sont automatiquement inclus dans la réponse météo pour Surtainville. Les données proviennent de [horaire-maree.fr](https://www.horaire-maree.fr/maree/Surtainville/) (gratuit, sans clé).
+Les horaires de marées (pleine mer / basse mer) proviennent de **TideTurtle API** (gratuite, sans clé, 7 jours de données Open-Meteo Marine).
+
+**Par jour** : chaque jour de prévision dans la limite de 7 jours affiche ses propres marées à côté des conditions météo :
+```
+A Surtainville, Nuageux. 14.1 degrés...
+Marées: pleine mer 14h19 (0.84m); basse mer 21h03 (-1.63m).
+Prévisions. mercredi: Bruine — basse mer 00h44 (-2.01m); pleine mer 06h27 (1.18m)...
+```
+
+Aujourd'hui = après les conditions actuelles, avant les prévisions.
+Jours 8+ (au-delà de 7j TideTurtle) = météo seule, sans marées.
 
 ### PMU (pronostics / résultats)
 
@@ -275,6 +346,16 @@ Le LLM décide automatiquement s'il doit chercher sur internet ou répondre de t
 | Commandes directes (musique) | 15/min | Stop/arrête sans wake word, fenêtre 3s |
 | Chat LLM | 30/min | Modèle de chat séparé |
 
+### Annulation clavier
+
+Le thread `_cancel_listener` surveille stdin en mode **non-canonique** (`tty.setcbreak`) + **non-bloquant** (`fcntl.O_NONBLOCK`). Détecte les touches brutes :
+- `\x1b` → **Escape**
+- `\x00` → **Ctrl+Space**
+
+Appelle directement `tts.stop()` + `_stop_all_playback()`.
+
+> Note : `stdin=subprocess.DEVNULL` est passé aux players (gtts, mpv) pour qu'ils ne consomment pas stdin.
+
 ### Anti-écho (mode chat)
 
 - TTS synchrone : `wait=True` (bloquant)
@@ -287,17 +368,20 @@ Le LLM décide automatiquement s'il doit chercher sur internet ou répondre de t
 
 | Plugin | Fonction |
 |--------|----------|
-| `tts_plugin` | Synthèse vocale (gTTS voix féminine, fallback eSpeak/Piper) |
-| `chat_agent_plugin` | Chat IA via Groq API (Llama 3.3, 3.1, Mixtral...) |
-| `smart_bulb_plugin` | Ampoules connectées |
-| `tv_plugin` | Téléviseurs |
-| `music_player_plugin` | Musique YouTube (mpv fullscreen, pipe yt-dlp) |
+| `tts_plugin` | Synthèse vocale (gTTS voix féminine, stop() kill process + nettoyage tmp) |
+| `chat_agent_plugin` | Chat IA via Groq API (9 modèles + personnalisé) + recherche web DuckDuckGo avec récupération contenu pages |
+| `music_player_plugin` | Musique YouTube (yt-dlp \| mpv, `--no-keep-open --loop=no`) |
+| `audiobook_plugin` | Livres audio (YouTube + litteratureaudio.com) |
+| `smart_bulb_plugin` | Ampoules connectées (Hue, Tuya, Shelly, LIFX) |
+| `tv_plugin` | Téléviseurs (Samsung, LG, Chromecast) |
 | `homeassistant_plugin` | Home Assistant |
 | `esp32_relay_plugin` | Relais ESP32 |
-| `pc_plugin` | Contrôle PC distant |
-| `ir_plugin` | Contrôle infrarouge |
+| `pc_plugin` | Contrôle PC distant (WoL, SSH, API Flask) |
+| `ir_plugin` | Contrôle infrarouge (LIRC, Broadlink, Flirc) |
 | `pmu_plugin` | PMU TurfInfo (programme quinté+) |
 | `script_plugin` | Scripts shell |
+| `wake_word_engine` | Détection wake word avec VAD (openWakeWord / WebRTC) |
+| `conversation_logger` | Log des conversations en Markdown |
 
 ---
 
@@ -325,26 +409,27 @@ python voice_control.py --input-device default
 
 ### "Groq connection error"
 
-Vérifie ta clé dans `config.json` :
+Vérifie ta clé dans `config.json` (hors git, à créer depuis `config.json.example`) :
 
-```json
-{
-  "groq_api_key": "gsk_ta-clé-ici"
-}
+```bash
+cp config.json.example config.json
+# édite config.json → mets ta clé gsk_...
 ```
 
 La clé doit commencer par `gsk_`.
 
 ### Le wake word n'est pas reconnu
 
-- Vérifie que le micro est bien device[3] avec `--list-audio-devices`
+- Vérifie les indices micros avec `--list-audio-devices`
+- Configure `input_devices` dans `config.json` (ex. `[1, 2]` pour deux micros USB)
 - Parle plus fort ou rapproche-toi du micro
 - Vérifie le VU mètre : si tu vois `(silence)` en parlant, le micro est trop faible
 - Ajuste le seuil `rms < 0.001` dans `listen_for_wake_word()` de `voice_recognizer.py`
 
 ### La musique ne s'arrête pas
 
-- Pendant la musique, dis directement **"stop"** ou **"arrête"** sans "BOB"
+- Pendant la musique, dis directement **"stop"**, **"arrête"** ou **"annule"** sans "bob"
+- **Escape** ou **Ctrl+Space** au clavier pour annulation immédiate
 - Le système écoute en continu (fenêtre de 3s, ~15 appels/min Groq)
 - Si ça ne marche pas, répète "stop" clairement
 - Vérifie que le micro capte bien ta voix (le VU mètre doit réagir)
@@ -357,12 +442,19 @@ python voice_control.py --mode test
 
 ### Pas de sortie audio HDMI
 
-Utilise `--output-device 1` ou teste avec `--test-audio`.
+Utilise `--output-device 0` ou teste avec `--test-audio`.
 
 ### Le mode chat fait un monologue (écho)
 
-- Le TTS est maintenant synchrone avec anti-écho intégré
+- Le TTS est synchrone avec anti-écho intégré
 - Si le problème persiste, monte le seuil d'écho dans `_is_echo()` de `voice_control.py`
+
+### "pkill: Exec format error" (ARM64)
+
+Le binaire `pgrep` (symlink cible de `pkill`) peut être corrompu. Réinstalle `procps` :
+```bash
+sudo apt install --reinstall procps
+```
 
 ---
 
@@ -382,19 +474,37 @@ Affiche le mode (cloud/local), teste l'audio, les imports, le parsing, le TTS, l
 
 ```
 voice_control/
-├── voice_control.py          # Application principale
-├── voice_recognizer.py       # STT (Whisper local / Groq), VAD, wake word, rate limiter
-├── command_parser.py         # Analyse + exécution des commandes (météo, PMU, etc.)
+├── voice_control.py          # Application principale (cancel, TTS, mode interactif)
+├── voice_recognizer.py       # STT (Groq Whisper-large-v3), double micro, VAD, wake word
+├── command_parser.py         # Analyse + exécution des commandes (météo, marées TideTurtle, PMU, etc.)
 ├── plugin_manager.py         # Gestionnaire de plugins
 ├── test_io.py                # Script de test
+├── thumbnail_display.py      # Sélection visuelle YouTube (Firefox + voix)
+├── conversation_logger.py    # Log des échanges en Markdown
+├── key_helper.py             # Lecture clavier raw (non-canonique)
+├── config.json               # Configuration (clé Groq, audio, localisation) **hors git**
+├── config.json.example       # Exemple de config
+├── requirements.txt          # Dépendances Python
+├── .gitignore                # config.json, venv, logs, pycache exclus
+├── Dockerfile.amd64          # Build Docker x86_64
+├── Dockerfile.arm64          # Build Docker ARM64
+├── setup.sh                  # Installation x86_64
+├── setup_orangepi2w.sh       # Installation Orange Pi 2W (ARM64)
+├── setup_rk3528.sh           # Installation RK3528 (ARM64)
 ├── plugins/
-│   ├── tts_plugin.py         # Synthèse vocale (gTTS)
-│   ├── chat_agent_plugin.py  # Chat IA (Groq)
-│   ├── pmu_plugin.py         # PMU TurfInfo (programme quinté+)
-│   ├── smart_bulb_plugin.py
-│   ├── tv_plugin.py
-│   ├── music_player_plugin.py  # YouTube audio (mpv)
-│   └── ...
-├── config.json
-└── requirements.txt
+│   ├── tts_plugin.py         # Synthèse vocale (gTTS, stop() kill process)
+│   ├── chat_agent_plugin.py  # Chat IA (Groq, 9 modèles)
+│   ├── music_player_plugin.py  # YouTube audio (mpv + yt-dlp)
+│   ├── audiobook_plugin.py   # Livres audio YouTube / litteratureaudio.com
+│   ├── pmu_plugin.py         # PMU TurfInfo
+│   ├── smart_bulb_plugin.py  # Ampoules (Hue, Tuya, etc.)
+│   ├── tv_plugin.py          # Téléviseurs (Samsung, LG, Chromecast)
+│   ├── pc_plugin.py          # PC distant (WoL, SSH, API)
+│   ├── ir_plugin.py          # IR (LIRC, Broadlink, Flirc)
+│   ├── esp32_relay_plugin.py # Relais ESP32
+│   ├── homeassistant_plugin.py  # Home Assistant
+│   ├── http_plugin.py        # Périphériques HTTP
+│   ├── script_plugin.py      # Scripts shell
+│   └── wake_word_engine.py   # VAD (openWakeWord / WebRTC)
+└── venv/                     # Virtualenv (hors git)
 ```
