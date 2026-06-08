@@ -1,0 +1,19 @@
+{
+    "whisper": {
+        "model": "tiny",
+        "language": "fr",
+        "device": "cpu"
+    },
+    "audio": {
+        "input_device": null,
+        "sample_rate": 16000,
+        "chunk_duration": 2,
+        "wake_chunk_duration": 1
+    },
+    "wake_word": "BOB",
+    "log_level": "INFO",
+    "memory": {
+        "max_cache_size": 128,
+        "gc_interval": 300
+    }
+}

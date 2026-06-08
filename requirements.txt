@@ -1,0 +1,46 @@
+# ===========================================
+# Voice Control - Toutes les dépendances
+# Optimisé pour Orange Pi 2W (4Go RAM, ARM64)
+# ===========================================
+
+# === Core ===
+numpy>=1.26.0
+sounddevice>=0.4.6
+requests>=2.28.0
+
+# === Reconnaissance vocale (optionnel - offline) ===
+# Pour Orange Pi 2W (4Go RAM): utiliser modèle 'tiny'
+# openai-whisper>=20231117
+# torch>=2.0.0 --index-url https://download.pytorch.org/whl/cpu
+
+# === Audio ===
+pyaudio>=0.2.13
+pygame>=2.5.0
+
+# === TTS (synthèse vocale) ===
+gtts>=2.5.0
+# piper-tts>=1.0.0  # Voix FR naturelle (optionnel)
+
+# === Musique / YouTube ===
+yt-dlp>=2024.0.0
+# mpv ou mplayer requis: sudo apt install mpv
+
+# === Home Assistant ===
+# homeassistant>=2024.0.0  # Optionnel
+
+# === Ampoules connectées ===
+# python-hue (pour Philips Hue)
+# python-tuya (pour Tuya/SmartLife)
+
+# === IR (infrarouge) ===
+# python-lirc>=1.2.0
+# broadlink>=0.18.0  # Pour Broadlink RM
+# pychromecast>=15.0.0  # Pour Chromecast
+
+# === Flask (serveur API optionnel) ===
+flask>=3.0.0
+flask-cors>=4.0.0
+ddgs>=9.0.0
+
+# === Build / Distribution (optionnel) ===
+# pyinstaller>=6.0.0  # Pour créer un exécutable

@@ -1,0 +1,20 @@
+{
+    "name": "voice-control",
+    "version": "1.0.0",
+    "description": "Application de contrôle vocal pour objets connectés",
+    "author": "",
+    "license": "MIT",
+    "scripts": {
+        "install-deps": "pip install -r requirements.txt",
+        "setup": "bash setup.sh"
+    },
+    "requirements": [
+        "numpy",
+        "sounddevice",
+        "requests"
+    ],
+    "optional": [
+        "openai-whisper",
+        "torch"
+    ]
+}

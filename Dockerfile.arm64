@@ -1,0 +1,28 @@
+# Voice Control - Orange Pi 2W (ARM64, 4Go RAM)
+# Optimisé pour Allwinner H618
+FROM python:3.11-bookworm
+
+# Dépendances système ARM64
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    portaudio19-dev \
+    libasound2-dev \
+    libsndfile1 \
+    ffmpeg \
+    espeak espeak-ng \
+    mpv \
+    alsa-utils \
+    && rm -rf /var/lib/apt/lists/*
+
+# Dépendances Python (numpy < 2.0 pour compatibilité ARM)
+COPY requirements.txt /app/
+RUN pip install --no-cache-dir numpy==1.26.4 && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Code source
+COPY . /app/
+WORKDIR /app
+
+ENV PYTHONPATH=/app
+ENV WHISPER_MODEL=tiny
+
+CMD ["python", "voice_control.py", "--help"]

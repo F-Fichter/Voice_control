@@ -1,0 +1,116 @@
+python voice_control.py --input-device 3 --output-device 0
+
+############################################################
+  TEST DES ENTREES/SORTIES - VOICE CONTROL
+############################################################
+
+  Date : 2026-05-14 12:11:23
+  Mode : 100% cloud (Groq)
+  Repertoire : /home/fran/OPENCODE/voice_control
+
+--- Peripheriques audio ---
+
+Index  Nom                                                In   Out 
+----------------------------------------------------------------
+    0    Intel HDMI/DP LPE Audio: - (hw:0,0)                0    8   
+    1    Intel HDMI/DP LPE Audio: - (hw:0,1)                0    8   
+    2    Intel HDMI/DP LPE Audio: - (hw:0,2)                0    8   
+    3    USB PnP Sound Device: Audio (hw:1,0)               1    0   
+    4    sysdefault                                         0    128 
+    5    hdmi                                               0    8   
+    6    lavrate                                            0    128 
+    7    samplerate                                         0    128 
+    8    speexrate                                          0    128 
+    9    pipewire                                           64   64  
+    10   pulse                                              32   32  
+    11   speex                                              0    1   
+    12   upmix                                              0    8   
+    13   vdownmix                                           0    6   
+    14   dmix                                               0    2   
+  * 15   default                                            64   64  
+  Entree (micro) (defaut: 15, ?=liste) :   Sortie (hp) (defaut: 15, ?=liste) : 
+  Entree : device[3]  Sortie : device[15]
+
+============================================================
+  TEST 1 : Imports
+============================================================
+  [OK] voice_control
+  [OK] VoiceRecognizer
+  [OK] CommandParser
+  [OK] PluginManager
+  [OK] TTSPlugin
+  [OK] ChatAgent
+
+============================================================
+  TEST 2 : Sortie audio (sounddevice)
+============================================================
+  Sortie : device[15] default
+  Sample rate : 44100 Hz, canaux : 64
+  Lecture [######..............] 33%    Lecture [#############.......] 66%    Lecture [####################] 100%  
+  [OK] Son emis
+
+============================================================
+  TEST 3 : Entree audio (sounddevice)
+============================================================
+  Entree : device[3] USB PnP Sound Device: Audio (hw:1,0)
+  Sample rate natif : 44100 Hz
+  Parle dans le micro (2s)...
+
+  [ERR] cannot convert float NaN to integer
+
+============================================================
+  TEST 4 : Fichiers de configuration
+============================================================
+  [OK] config.json
+  [--] devices.json absent
+
+============================================================
+  TEST 5 : Parsing de commandes
+============================================================
+  [OK] "allume la lumiere" -> True
+  [ERR] "eteinds le salon" -> False (attendu True)
+  [OK] "joue de la musique" -> True
+  [OK] "parle avec bob" -> True
+  [OK] "zfhjkldfg" -> False
+
+============================================================
+  TEST 6 : Synthese vocale (TTS)
+============================================================
+TTS: Engine 'gtts' sélectionné
+  Moteur : gtts
+  Vitesse : 150 mots/min
+  [OK] speak()
+  [OK] speak_async()
+  [OK] confirm()
+  [OK] set_rate()
+  [OK] set_voice()
+  [OK] is_available()
+
+============================================================
+  TEST 7 : Chat IA (Groq / Ollama / fallback)
+============================================================
+  API : groq
+  Modele : llama3-70b-8192
+Groq chat error (400): {"error":{"message":"The model `llama3-70b-8192` has been decommissioned and is no longer supported. Please refer to https://console.groq.com/docs/deprecations for a recommendation on which model to u
+  Reponse : "Désolé, je ne peux pas répondre pour le moment"
+  [OK] Chat operationnel
+
+============================================================
+  TEST 8 : API STD distante (Groq / OpenAI)
+============================================================
+  API Groq detectee (Whisper-large-v3)
+  [OK] Connexion Groq OK, modeles STT : ['whisper-large-v3', 'whisper-large-v3-turbo']
+
+============================================================
+  BILAN
+============================================================
+  [OK] Imports
+  [OK] Sortie audio
+  [ERR] Entree audio
+  [OK] Fichiers config
+  [ERR] Parsing commandes
+  [OK] TTS
+  [OK] Chat IA
+  [OK] API STT distante
+
+  6/8 tests passes

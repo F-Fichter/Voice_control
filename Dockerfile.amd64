@@ -1,0 +1,26 @@
+# Voice Control - AMD64 (PC Linux)
+FROM python:3.11-slim-bookworm
+
+# Dépendances système
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    portaudio19-dev \
+    libasound2-dev \
+    libsndfile1 \
+    ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+#-whisper (optionnel, décommenter si nécessaire)
+# RUN pip install openai-whisper torch
+
+# Dépendances Python
+COPY requirements.txt /app/
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Code source
+COPY . /app/
+WORKDIR /app
+
+# Compile les fichiers
+ENV PYTHONPATH=/app
+
+CMD ["python", "voice_control.py", "--help"]

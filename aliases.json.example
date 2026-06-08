@@ -1,0 +1,47 @@
+{
+    "soleil": {
+        "target": "lampe_salon",
+        "action": "toggle",
+        "description": "Lumière principale du salon"
+    },
+    "nuit": {
+        "target": "lampe_salon",
+        "action": "dim",
+        "description": "Lumière tamisée"
+    },
+    "jour": {
+        "target": "lampe_salon",
+        "action": "brighten",
+        "description": "Lumière pleine puissance"
+    },
+    "box": {
+        "target": "tv_salon",
+        "action": "toggle",
+        "description": "Télé du salon"
+    },
+    "cinema": {
+        "target": "tv_salon",
+        "action": "netflix",
+        "description": "Lance Netflix"
+    },
+    "musique": {
+        "target": "playlist_default",
+        "action": "play",
+        "description": "Lance la musique"
+    },
+    "silence": {
+        "target": "music",
+        "action": "stop",
+        "description": "Arrête la musique"
+    },
+    "ordi": {
+        "target": "pc_bureau",
+        "action": "toggle",
+        "description": "PC du bureau"
+    },
+    "porte": {
+        "target": "relais_esp32",
+        "action": "toggle",
+        "description": "Relais ESP32"
+    }
+}

@@ -1,0 +1,15 @@
+{
+    "devices": [
+        {
+            "name": "relais_script",
+            "type": "script",
+            "config": {
+                "command_on": "bash /home/fran/OPENCODE/video/bridge_wifi.sh",
+                "command_off": "echo 'off'",
+                "command_status": "echo '{\"state\": \"on\"}'",
+                "command_toggle": "echo 'toggled'"
+            },
+            "enabled": true
+        }
+    ]
+}

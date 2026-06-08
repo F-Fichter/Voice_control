@@ -1,0 +1,28 @@
+{
+    "devices": [
+        {
+            "name": "relais_esp32",
+            "type": "esp32",
+            "config": {
+                "host": "192.168.1.100",
+                "port": 6053,
+                "api_key": "D9ir8KEPvFdGj+YKZDhSj+5tJQJvTQOfhz8AdfxIGUQ=",
+                "relay_id": "relay_1"
+            },
+            "enabled": true
+        },
+        {
+            "name": "lampe_salon",
+            "type": "bulb",
+            "config": {
+                "protocol": "hue",
+                "host": "192.168.1.50",
+                "api_key": "YOUR_HUE_API_KEY",
+                "device_id": "1"
+            },
+            "enabled": true
+        }
+    ]
+}
+    ]
+}
